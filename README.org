@@ -1,5 +1,7 @@
 * which-key-show-simple
-(WIP) Have which-key show you what single-key commands are available RIGHT NOW
-** TODO list
+(WIP) Have which-key show you what single-key commands are available RIGHT NOW,
+sorted from simplest to most chord-ful
+
+** todo list
 - [ ] get a working set-up with =uninteresting-commands= using regexps
 - [ ] make a bigger todo list

@@ -1,28 +1,18 @@
 (defvar uninteresting-commands nil)
 
-;; "borrowed" from doom emacs
-(defmacro appendq! (sym &rest lists)
-  "Append LISTS to SYM in place."
-  `(setq ,sym (append ,sym ,@lists)))
-
 (defun concat-list (L)
   (let ((result '()))
     (dolist (e L)
-      (appendq! result e))
+      (setq result (append result e)))
     result))
 
 (defun process (keymap)
   (cond
-   ((eq 'keymap
-        (car keymap))
-    (process
-     (cdr keymap)))
-   ((stringp
-     (car keymap))
-    (process
-     (cdr keymap)))
-   ((eq 'remap
-        (car keymap))
+   ((eq 'keymap (car keymap))
+    (process (cdr keymap)))
+   ((stringp (car keymap))
+    (process (cdr keymap)))
+   ((eq 'remap (car keymap))
     nil)
    (t keymap)))
 
@@ -41,8 +31,6 @@
                                  (cdr pair)))
             result)))
 
-(top-level-keybinds)
-
 (defun is-interesting-p (pair)
   (let ((key (car pair))
         (command (cdr pair)))
@@ -54,6 +42,7 @@
               (or (cl-search "mouse" (symbol-name command))
                   (cl-search "mwheel" (symbol-name command))
                   (member (symbol-name command) uninteresting-commands)))))))
+
 (defun lex< (list1 list2)
   "Lexicographically compare two shallow lists of strings and numbers"
   (cond ((and (equal list1 nil) 

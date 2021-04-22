@@ -1,3 +1,5 @@
+(require 'which-key)
+
 (defvar uninteresting-commands nil)
 
 (defun concat-list (L)

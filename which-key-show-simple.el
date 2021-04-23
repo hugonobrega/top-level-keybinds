@@ -40,19 +40,23 @@
      (or (eq 'digit-argument command)
          (eq 'negative-argument command)
          (cl-search "mouse" key)
+         (and (cl-search "<" key)
+              (cl-search ">" key))
          (and (symbolp command)
-              (or (cl-search "mouse" (symbol-name command))
+              (or (cl-search "evil-" (symbol-name command))
+                  (cl-search "mouse" (symbol-name command))
                   (cl-search "mwheel" (symbol-name command))
+                  (cl-search "menu-bar" (symbol-name command))
                   (member (symbol-name command) uninteresting-commands)))))))
 
 (defun lex< (list1 list2)
   "Lexicographically compare two shallow lists of strings and numbers"
-  (cond ((and (equal list1 nil) 
-              (equal list2 nil))
+  (cond ((and (null list1) 
+              (null list2))
          nil)
-        ((eq list1 nil)
+        ((null list1)
          t)
-        ((eq list2 nil)
+        ((null list2)
          nil)
         ((and (numberp list1)
               (numberp list2))
@@ -89,15 +93,36 @@
         (lambda (x y) (lex< (list (length (split-string (car x) "-")) (length (car x)) (downcase (car x)))
                             (list (length (split-string (car y) "-")) (length (car y)) (downcase (car y)))))))
 
+(defun propertize-for-which-key (pair)
+  (let ((key (car pair))
+        (command (cdr pair)))
+    (cond ((symbolp command)
+           (let* ((command-name (symbol-name command))
+                  (goodmatch (cl-search (concat "-" (downcase key)) (downcase command-name)))
+                  (match (if goodmatch (+ 1 goodmatch)
+                           (cl-search (downcase key) (downcase command-name)))))
+             (if match
+                 (list
+                  (propertize key 'face 'which-key-docstring-face)
+                  (propertize " → " 'face 'which-key-separator-face)
+                  (concat
+                   (propertize (substring command-name 0 match) 'face 'which-key-command-description-face)
+                   (propertize key 'face 'which-key-special-key-face)
+                   (propertize (substring command-name (+ 1 match)) 'face 'which-key-command-description-face)
+                   (propertize " " 'face 'which-key-command-description-face)))
+               (list
+                (propertize key 'face 'which-key-key-face)
+                (propertize " → " 'face 'which-key-separator-face)
+                (propertize command-name 'face 'which-key-command-description-face)))))
+          (t (list
+              (propertize key 'face 'which-key-key-face)
+              (propertize " → " 'face 'which-key-separator-face)
+              (propertize "(lambda)" 'face 'which-key-command-description-face))))))
+
 ;;;###autoload
 (defun which-key-show-simple ()
   (interactive)
-  (let ((keylist (mapcar (lambda (x)
-                           (list
-                            (propertize (car x) 'face 'which-key-key-face)
-                            (propertize " → " 'face 'which-key-separator-face)
-                            (propertize (if (symbolp (cdr x)) (symbol-name (cdr x)) "lambda") 'face 'which-key-command-description-face)))
-                         (interesting-top-level))))
+  (let ((keylist (mapcar #'propertize-for-which-key (interesting-top-level))))
     (setq which-key--pages-obj
           (which-key--create-pages keylist))
     (which-key--show-page)))

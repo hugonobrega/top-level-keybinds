@@ -92,6 +92,25 @@
   (sort (seq-filter #'is-interesting-p (top-level-keybinds))
         (lambda (x y) (lex< (list (length (split-string (car x) "-")) (length (car x)) (downcase (car x)))
                             (list (length (split-string (car y) "-")) (length (car y)) (downcase (car y)))))))
+(defface which-key-hide-face
+  nil
+  ""
+  :group 'which-key-faces)
+
+(defface which-key-highlight-key-face
+  nil
+  ""
+  :group 'which-key-faces)
+
+(defun which-key-setup-invisible (&optional x)
+  (set-face-foreground 'which-key-hide-face
+                      (face-background 'default))
+  (set-face-background 'which-key-highlight-key-face
+                       (face-foreground 'which-key-command-description-face))
+  (set-face-foreground 'which-key-highlight-key-face
+                      (face-background 'default)))
+
+(advice-add 'which-key--show-page :after #'which-key-setup-invisible)
 
 (defun propertize-for-which-key (pair)
   (let ((key (car pair))
@@ -99,24 +118,25 @@
     (cond ((symbolp command)
            (let* ((command-name (symbol-name command))
                   (goodmatch (cl-search (concat "-" (downcase key)) (downcase command-name)))
-                  (match (if goodmatch (+ 1 goodmatch)
+                  (match (if goodmatch
+                             (+ 1 goodmatch)
                            (cl-search (downcase key) (downcase command-name)))))
              (if match
                  (list
-                  (propertize key 'face 'which-key-docstring-face)
-                  (propertize " → " 'face 'which-key-separator-face)
+                  (propertize key 'face 'which-key-hide-face)
+                  (propertize " " 'face 'which-key-hide-face)
                   (concat
                    (propertize (substring command-name 0 match) 'face 'which-key-command-description-face)
-                   (propertize key 'face 'which-key-special-key-face)
+                   (propertize key 'face 'which-key-highlight-key-face)
                    (propertize (substring command-name (+ 1 match)) 'face 'which-key-command-description-face)
                    (propertize " " 'face 'which-key-command-description-face)))
                (list
-                (propertize key 'face 'which-key-key-face)
-                (propertize " → " 'face 'which-key-separator-face)
+                (propertize key 'face 'which-key-highlight-key-face)
+                (propertize ":" 'face 'which-key-key-face)
                 (propertize command-name 'face 'which-key-command-description-face)))))
           (t (list
-              (propertize key 'face 'which-key-key-face)
-              (propertize " → " 'face 'which-key-separator-face)
+              (propertize key 'face 'which-key-highlight-key-face)
+              (propertize ":" 'face 'which-key-key-face)
               (propertize "(lambda)" 'face 'which-key-command-description-face))))))
 
 ;;;###autoload

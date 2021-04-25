@@ -40,9 +40,12 @@ through multi-page results.
   starting with =evil-=, those involving the mouse, and keys of the form
   =<...>= (TODO: make this handle regexps and avoid hard-coding). Default
   is =("digit-argument" "negative-argument" "execute-extended-command")=.
-- The variable =tlk/change-look= is a boolean indicating whether to use a
+- The variable =tlk/change-look?= is a boolean indicating whether to use a
   special look for the =which-key= buffer (including embedding the key into
   the command name when possible; see image above). Default is =t=.
+- The variable =tlk/show-prefix?= controls how prefix keys are shown:
+  - if it is =nil=, prefixes are hidden;
+  - if it is a string, then that is how prefixes are shown.
 - The function =tlk/comparison-predicate= is used as PREDICATE for sorting
   the pairs of =(key . command-name)=, as in the documentation for the built-in
   function =sort=. You can provide your own or use one of the two provided:

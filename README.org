@@ -1,7 +1,36 @@
-* which-key-show-simple
+* top-level-keybinds
 (WIP) Have which-key show you what single-key commands are available RIGHT NOW,
-sorted from simplest to most chord-ful
+sorted (by default) from simplest to most chord-ful
 
-** todo list
-- [ ] get a working set-up with =uninteresting-commands= using regexps
-- [ ] make a bigger todo list
+** Installation 
+Using doom emacs, add the following line to =DOOMDIR/packages.el=
+#+begin_src elisp
+(package! top-level-keybinds
+  :recipe (:host github
+           :repo "hugonobrega/top-level-keybinds"))
+#+end_src
+then run =EMACSDIR/bin/doom sync=
+
+** Usage
+Just call =tlk/show= (bind it to a comfy key?).
+Pro-tip: also give =which-key-show-next-page-cycle= and
+=which-key-show-previous-page-cycle= comfortable keybinds to easily scroll
+through multi-page results.
+
+** Configuration
+- The variable =tlk/uninteresting-commands= holds a list of command names
+  that tlk/show will ignore; we currently also hard-code ignoring command
+  starting with =evil-=, those involving the mouse, and keys of the form
+  =<...>= (TODO: make this handle regexps and avoid hard-coding). Default
+  is =("digit-argument" "negative-argument" "execute-extended-command")=.
+- The variable =tlk/change-look= is a boolean indicating whether to use a
+  special look for the =which-key= buffer (including embedding the key into
+  the command name when possible; see image above). Default is =t=.
+- The function =tlk/comparison-predicate= is used as PREDICATE for sorting
+  the pairs of =(key . command-name)=, as in the documentation for the built-in
+  function =sort=. You can provide your own or use one of the two provided:
+  - #'tlk/compare-keys: sorts by the size of the key-chord first, then by the
+    length of the key in characters, then alphabetically by the key itself
+    (not case sensitive). This is the default.
+  - #'tlk/compare-command-names: sorts alphabetically by command name, compared
+    using =string<=.

@@ -1,5 +1,5 @@
 * top-level-keybinds
-(WIP) Have which-key show you what single-key commands are available RIGHT NOW,
+Have which-key show you what single-key commands are available RIGHT NOW,
 sorted (by default) from simplest to most chord-ful
 
 ** Screenshots

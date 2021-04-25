@@ -1,150 +1,195 @@
 (require 'which-key)
 
-(defvar uninteresting-commands nil)
+(defvar tlk/uninteresting-commands '("digit-argument"
+                                     "negative-argument"
+                                     "execute-extended-command")
+  "A list of command names that tlk will ignore")
 
-(defun concat-list (L)
-  (let ((result '()))
-    (dolist (e L)
-      (setq result (append result e)))
-    result))
+(defvar tlk/change-look t
+  "A boolean controling whether to change the which-key buffer
+look or not. The change includes trying to embed the key in
+the command name when possible.")
 
-(defun process (keymap)
+(defvar tlk/comparison-predicate #'tlk/compare-keys
+  "The predicate used for comparing pairs (key . command-name) when sorting
+the results. Define your own, or use one of the two provided:
+
+ - #'tlk/compare-keys: sorts by key length first, then alphabetically by the
+key itself (not case sensitive)
+ - #'tlk/compare-command-names: sorts alphabetically by command name")
+
+(defun tlk/pair-key-command-p (candidate)
+  (and (listp candidate)
+       (or (commandp (cdr candidate))
+           (autoloadp (cdr candidate)))
+       (not (or (commandp (car candidate))
+                (autoloadp (car candidate))))))
+
+(defun tlk/add-M- (key)
   (cond
-   ((eq 'keymap (car keymap))
-    (process (cdr keymap)))
-   ((stringp (car keymap))
-    (process (cdr keymap)))
-   ((eq 'remap (car keymap))
+   ((cl-search "M-" key)
+    key)
+   ((memq 0 (list (cl-search "C-" key)
+                  (cl-search "H-" key)))
+    (concat (substring key 0 2) "M-" (substring key 2)))
+   ((eq 0 (cl-search "A-" key))
+    (concat "M-" (substring key 2)))
+   (t (concat "M-" key))))
+
+(defun tlk/collect? (pair &optional add-M-?)
+  (when (tlk/pair-key-command-p pair)
+    (let* ((key (key-description (vector (car pair))))
+           (key (if add-M-?
+                    (tlk/add-M- key)
+                  key))
+           (key (replace-regexp-in-string "A-" "M-" key))
+           (command-name
+            (if (symbolp (cdr pair))
+                (symbol-name (cdr pair))
+              "(lambda)")))
+      (cons key command-name))))
+
+(defun tlk/compare-keys (x y)
+  (tlk/lex< (list (length (split-string (car x) "-"))
+                  (length (car x))
+                  (downcase (car x)))
+            (list (length (split-string (car y) "-"))
+                  (length (car y))
+                  (downcase (car y)))))
+
+(defun tlk/compare-command-names (x y)
+  (string< (cdr x) (cdr y)))
+
+(defun tlk/interesting? (pair)
+  (let ((key (car pair))
+        (command-name (cdr pair)))    
+    (not (or (cl-search "mouse" key)
+             (and (not (equal "<menu>" key))
+                  (cl-search "<" key)
+                  (cl-search ">" key))
+             (cl-search "evil-" command-name)
+             (cl-search "mouse" command-name)
+             (cl-search "mwheel" command-name)
+             (cl-search "menu-bar" command-name)
+             (member command-name tlk/uninteresting-commands)))))
+
+(defun tlk/collect (&optional thing comparison-predicate)
+  (let ((thing (or thing
+                   (seq-reduce #'append (current-active-maps) nil)))
+        (comparison-predicate (or comparison-predicate
+                                  tlk/comparison-predicate))
+        (queue nil))
+    (dolist (item thing)
+      (cond ((tlk/collect? item)
+             (push (tlk/collect? item) queue))
+            ((listp item)
+             (cond ((and (eq 27 (car item))
+                         (eq 'keymap (cadr item)))
+                    (dolist (subitem (cddr item))
+                      (let ((processed (tlk/collect? subitem t)))
+                        (when processed
+                          (push processed queue)))))))))
+    (let
+        ((all (nreverse queue))
+         (seen (make-hash-table :test #'equal))
+         (result '()))
+      (dolist (pair all)
+        (unless (gethash (car pair) seen)
+          (puthash (car pair) t seen)
+          (push pair result)))
+      (sort (seq-filter #'tlk/interesting? result) comparison-predicate))))
+
+(defun tlk/lex< (list1 list2)
+  "Lexicographically (strictly) compare two shallow lists of strings and numbers.
+Assumes both lists have the same types of elements at positions in which they
+are both defined."
+  (cond
+   ((null list2)
     nil)
-   (t keymap)))
+   ((null list1)
+    t)
+   ((and (numberp list1)
+         (numberp list2))
+    (when (< list1 list2)
+      t))
+   ((and (stringp list1)
+         (stringp list2))
+    (when (string< list1 list2)
+      t))
+   ((and (numberp (car list1))
+         (numberp (car list2)))
+    (cond
+     ((< (car list1) (car list2))
+      t)
+     ((> (car list1) (car list2))
+      nil)
+     (t (tlk/lex< (cdr list1) (cdr list2)))))
+   ((and (stringp (car list1))
+         (stringp (car list2)))
+    (cond
+     ((string< (car list1) (car list2))
+      t)
+     ((string> (car list1) (car list2))
+      nil)
+     (t (tlk/lex< (cdr list1) (cdr list2)))))
+   (t (tlk/lex< (cdr list1) (cdr list2)))))
 
-(defun top-level-keybinds ()
-  (let ((all (seq-filter (lambda (x) (and (listp x)
-                                          (commandp (cdr x))
-                                          (not (commandp (car x)))))
-                         (concat-list (mapcar #'process (current-active-maps)))))
-        (seen (make-hash-table))
-        (result '()))
-    (dolist (pair all)
-      (unless (gethash (car pair) seen)
-        (puthash (car pair) t seen)
-        (push pair result)))
-    (mapcar (lambda (pair) (cons (key-description (vector (car pair)))
-                                 (cdr pair)))
-            result)))
-
-(defun is-interesting-p (pair)
-  (let ((key (car pair))
-        (command (cdr pair)))
-    (not
-     (or (eq 'digit-argument command)
-         (eq 'negative-argument command)
-         (cl-search "mouse" key)
-         (and (cl-search "<" key)
-              (cl-search ">" key))
-         (and (symbolp command)
-              (or (cl-search "evil-" (symbol-name command))
-                  (cl-search "mouse" (symbol-name command))
-                  (cl-search "mwheel" (symbol-name command))
-                  (cl-search "menu-bar" (symbol-name command))
-                  (member (symbol-name command) uninteresting-commands)))))))
-
-(defun lex< (list1 list2)
-  "Lexicographically compare two shallow lists of strings and numbers"
-  (cond ((and (null list1) 
-              (null list2))
-         nil)
-        ((null list1)
-         t)
-        ((null list2)
-         nil)
-        ((and (numberp list1)
-              (numberp list2))
-         (cond
-          ((< list1 list2)
-           t)
-          (t nil)))
-        ((and (stringp list1)
-              (stringp list2))
-         (cond
-          ((string< list1 list2)
-           t)
-          (t nil)))
-        ((and (numberp (car list1))
-              (numberp (car list2)))
-         (cond
-          ((< (car list1) (car list2))
-           t)
-          ((> (car list1) (car list2))
-           nil)
-          (t (lex< (cdr list1) (cdr list2)))))
-        ((and (stringp (car list1))
-              (stringp (car list2)))
-         (cond
-          ((string< (car list1) (car list2))
-           t)
-          ((string> (car list1) (car list2))
-           nil)
-          (t (lex< (cdr list1) (cdr list2)))))
-        (t (lex< (cdr list1) (cdr list2)))))
-
-(defun interesting-top-level ()
-  (sort (seq-filter #'is-interesting-p (top-level-keybinds))
-        (lambda (x y) (lex< (list (length (split-string (car x) "-")) (length (car x)) (downcase (car x)))
-                            (list (length (split-string (car y) "-")) (length (car y)) (downcase (car y)))))))
-(defface which-key-hide-face
+(defface tlk/which-key-hide-face
   nil
   ""
-  :group 'which-key-faces)
+  :group 'tlk/which-key-faces)
 
-(defface which-key-highlight-key-face
+(defface tlk/which-key-highlight-key-face
   nil
   ""
-  :group 'which-key-faces)
+  :group 'tlk/which-key-faces)
 
-(defun which-key-setup-invisible (&optional x)
-  (set-face-foreground 'which-key-hide-face
-                      (face-background 'default))
-  (set-face-background 'which-key-highlight-key-face
-                       (face-foreground 'which-key-command-description-face))
-  (set-face-foreground 'which-key-highlight-key-face
-                      (face-background 'default)))
+(defun tlk/which-key-setup-invisible (&optional x)
+  (when tlk/change-look
+    (set-face-foreground 'tlk/which-key-hide-face
+                         (face-background 'default))
+    (set-face-background 'tlk/which-key-highlight-key-face
+                         (face-foreground 'which-key-command-description-face))
+    (set-face-foreground 'tlk/which-key-highlight-key-face
+                         (face-background 'default))))
 
-(advice-add 'which-key--show-page :after #'which-key-setup-invisible)
+(advice-add 'which-key--show-page :after #'tlk/which-key-setup-invisible)
 
-(defun propertize-for-which-key (pair)
-  (let ((key (car pair))
-        (command (cdr pair)))
-    (cond ((symbolp command)
-           (let* ((command-name (symbol-name command))
-                  (goodmatch (cl-search (concat "-" (downcase key)) (downcase command-name)))
-                  (match (if goodmatch
-                             (+ 1 goodmatch)
-                           (cl-search (downcase key) (downcase command-name)))))
-             (if match
-                 (list
-                  (propertize key 'face 'which-key-hide-face)
-                  (propertize " " 'face 'which-key-hide-face)
-                  (concat
-                   (propertize (substring command-name 0 match) 'face 'which-key-command-description-face)
-                   (propertize key 'face 'which-key-highlight-key-face)
-                   (propertize (substring command-name (+ 1 match)) 'face 'which-key-command-description-face)
-                   (propertize " " 'face 'which-key-command-description-face)))
-               (list
-                (propertize key 'face 'which-key-highlight-key-face)
-                (propertize ":" 'face 'which-key-key-face)
-                (propertize command-name 'face 'which-key-command-description-face)))))
-          (t (list
-              (propertize key 'face 'which-key-highlight-key-face)
-              (propertize ":" 'face 'which-key-key-face)
-              (propertize "(lambda)" 'face 'which-key-command-description-face))))))
+(defun tlk/propertize-for-which-key (pair)
+  (let*
+      ((key (car pair))
+       (command (cdr pair))
+       (goodmatch (cl-search (concat "-" (downcase key)) (downcase command)))
+       (match (if goodmatch
+                  (+ 1 goodmatch)
+                (cl-search (downcase key) (downcase command)))))
+    (cond
+     ((not tlk/change-look)
+      (list
+       (propertize key 'face 'which-key-key-face)
+       (propertize which-key-separator 'face 'which-key-separator-face)
+       (propertize command 'face 'which-key-command-description-face)))
+     (match
+      (list
+       (propertize key 'face 'tlk/which-key-hide-face)
+       (propertize " " 'face 'tlk/which-key-hide-face)
+       (concat
+        (propertize (substring command 0 match) 'face 'which-key-command-description-face)
+        (propertize key 'face 'tlk/which-key-highlight-key-face)
+        (propertize (substring command (+ 1 match)) 'face 'which-key-command-description-face)
+        (propertize " " 'face 'which-key-command-description-face))))
+     (t
+      (list
+       (propertize key 'face 'tlk/which-key-highlight-key-face)
+       ":"
+       (propertize command 'face 'which-key-command-description-face))))))
 
 ;;;###autoload
-(defun which-key-show-simple ()
+(defun tlk/show ()
   (interactive)
-  (let ((keylist (mapcar #'propertize-for-which-key (interesting-top-level))))
+  (let ((keylist (mapcar #'tlk/propertize-for-which-key (tlk/collect))))
     (setq which-key--pages-obj
           (which-key--create-pages keylist))
     (which-key--show-page)))
 
-(provide 'which-key-show-simple)
+(provide 'top-level-keybinds)

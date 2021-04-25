@@ -2,6 +2,11 @@
 (WIP) Have which-key show you what single-key commands are available RIGHT NOW,
 sorted (by default) from simplest to most chord-ful
 
+** Screenshots
+[[example-1.png]]
+
+[[example-2.png
+]]
 ** Installation 
 Using doom emacs, add the following line to =DOOMDIR/packages.el=
 #+begin_src elisp
@@ -34,3 +39,4 @@ through multi-page results.
     (not case sensitive). This is the default.
   - #'tlk/compare-command-names: sorts alphabetically by command name, compared
     using =string<=.
+

@@ -5,8 +5,8 @@ sorted (by default) from simplest to most chord-ful
 ** Screenshots
 [[example-1.png]]
 
-[[example-2.png
-]]
+[[example-2.png]]
+
 ** Installation 
 Using doom emacs, add the following line to =DOOMDIR/packages.el=
 #+begin_src elisp

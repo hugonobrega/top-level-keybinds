@@ -166,23 +166,34 @@ are both defined."
     (cond
      ((not tlk/change-look)
       (list
-       (propertize key 'face 'which-key-key-face)
-       (propertize which-key-separator 'face 'which-key-separator-face)
-       (propertize command 'face 'which-key-command-description-face)))
+       (propertize key
+                   'face 'which-key-key-face)
+       (propertize which-key-separator
+                   'face 'which-key-separator-face)
+       (propertize command
+                   'face 'which-key-command-description-face)))
      (match
       (list
-       (propertize key 'face 'tlk/which-key-hide-face)
-       (propertize " " 'face 'tlk/which-key-hide-face)
+       (propertize key
+                   'face 'tlk/which-key-hide-face)
+       (propertize " "
+                   'face 'tlk/which-key-hide-face)
        (concat
-        (propertize (substring command 0 match) 'face 'which-key-command-description-face)
-        (propertize key 'face 'tlk/which-key-highlight-key-face)
-        (propertize (substring command (+ 1 match)) 'face 'which-key-command-description-face)
-        (propertize " " 'face 'which-key-command-description-face))))
+        (propertize (substring command 0 match)
+                    'face 'which-key-command-description-face)
+        (propertize key
+                    'face 'tlk/which-key-highlight-key-face)
+        (propertize (substring command (+ 1 match))
+                    'face 'which-key-command-description-face)
+        (propertize " "
+                    'face 'which-key-command-description-face))))
      (t
       (list
-       (propertize key 'face 'tlk/which-key-highlight-key-face)
+       (propertize key
+                   'face 'tlk/which-key-highlight-key-face)
        ":"
-       (propertize command 'face 'which-key-command-description-face))))))
+       (propertize command
+                   'face 'which-key-command-description-face))))))
 
 ;;;###autoload
 (defun tlk/show ()

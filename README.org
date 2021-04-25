@@ -8,7 +8,7 @@ sorted (by default) from simplest to most chord-ful
 [[example-2.png]]
 
 ** Installation
-This package has =which-key= as a dependency, so first make sure that is
+This package has [[https://github.com/justbur/emacs-which-key][which-key]] as a dependency, so first make sure that is
 installed then follow the instructions below.
 
 *** Using doom emacs

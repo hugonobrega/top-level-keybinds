@@ -7,14 +7,26 @@ sorted (by default) from simplest to most chord-ful
 
 [[example-2.png]]
 
-** Installation 
-Using doom emacs, add the following line to =DOOMDIR/packages.el=
+** Installation
+This package has =which-key= as a dependency, so first make sure that is
+installed then follow the instructions below.
+
+*** Using doom emacs
+Add the following line to =DOOMDIR/packages.el=
 #+begin_src elisp
 (package! top-level-keybinds
   :recipe (:host github
            :repo "hugonobrega/top-level-keybinds"))
 #+end_src
 then run =EMACSDIR/bin/doom sync=
+
+*** Using "vanilla" emacs and use-package
+Add =top-level-keybinds.el= to a directory in your =load-path= and include
+the following lines in your =~/.emacs.d/init.el= file:
+#+begin_src elisp
+(use-package top-level-keybinds
+  :after which-key)
+#+end_src
 
 ** Usage
 Just call =tlk/show= (bind it to a comfy key?).

@@ -1,5 +1,5 @@
 * top-level-keybinds
-Have which-key show you what single-key commands are available RIGHT NOW,
+Have [[https://github.com/justbur/emacs-which-key][which-key]] show you what single-key commands are available RIGHT NOW,
 sorted (by default) from simplest to most chord-ful
 
 ** Screenshots

@@ -62,12 +62,16 @@ key itself (not case sensitive)
          (cons (key-description (vector (car pair))) tlk/show-prefix?))))
 
 (defun tlk/compare-keys (x y)
-  (tlk/lex< (list (length (split-string (car x) "-"))
-                  (length (car x))
-                  (downcase (car x)))
-            (list (length (split-string (car y) "-"))
-                  (length (car y))
-                  (downcase (car y)))))
+  (let ((keyx (car x))
+        (keyy (car y)))
+    (tlk/lex< (list (length (split-string keyx "-"))
+                    (length keyx)
+                    (downcase keyx)
+                    keyx)
+              (list (length (split-string keyy "-"))
+                    (length keyy)
+                    (downcase keyy)
+                    keyy))))
 
 (defun tlk/compare-command-names (x y)
   (string< (cdr x) (cdr y)))
@@ -88,7 +92,9 @@ key itself (not case sensitive)
           (member command-name tlk/uninteresting-commands)))))
 
 (defun tlk/collect (&optional thing comparison-predicate)
-  (let ((thing (or thing
+  (let ((eval-expression-print-length nil)
+        (eval-expression-print-level nil)
+        (thing (or thing
                    (seq-reduce #'append (current-active-maps) nil)))
         (comparison-predicate (or comparison-predicate
                                   tlk/comparison-predicate))

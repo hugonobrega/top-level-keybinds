@@ -1,4 +1,13 @@
+<<<<<<< HEAD
 ;; -*- lexical-binding: t; -*-
+=======
+;;; top-level-keybinds.el --- Have which-key show you what single-key commands are available RIGHT NOW -*- lexical-binding: t; -*-
+
+;; Package-Requires: ((emacs "26.3") (which-key "3.5.1"))
+;; Homepage: https://github.com/hugonobrega/top-level-keybinds
+
+;;; Code:
+>>>>>>> origin/main
 (require 'which-key)
 
 (defvar tlk/uninteresting-commands '("digit-argument"

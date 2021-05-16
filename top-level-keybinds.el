@@ -1,3 +1,4 @@
+;; -*- lexical-binding: t; -*-
 (require 'which-key)
 
 (defvar tlk/uninteresting-commands '("digit-argument"
@@ -91,11 +92,26 @@ key itself (not case sensitive)
           (cl-search "menu-bar" command-name)
           (member command-name tlk/uninteresting-commands)))))
 
+(defun tlk/preprocess (x)
+  (if (char-table-p x)
+      (let (accumulator)
+        (map-char-table
+         (lambda (key value)
+           (setq accumulator
+                 (cons (list
+                        (if (consp key)
+                            (list (car key) (cdr key))
+                          key)
+                        value)
+                       accumulator)))
+         x)
+        accumulator)
+    x))
+
 (defun tlk/collect (&optional thing comparison-predicate)
-  (let ((eval-expression-print-length nil)
-        (eval-expression-print-level nil)
-        (thing (or thing
-                   (seq-reduce #'append (current-active-maps) nil)))
+  (let ((thing (or thing
+                   (seq-map #'tlk/preprocess
+                            (seq-reduce #'append (current-active-maps) nil))))
         (comparison-predicate (or comparison-predicate
                                   tlk/comparison-predicate))
         (queue nil))
@@ -169,7 +185,8 @@ are both defined."
     (set-face-foreground 'tlk/which-key-hide-face
                          (face-background 'default))
     (set-face-background 'tlk/which-key-highlight-key-face
-                         (face-foreground 'which-key-command-description-face))
+                         (or (face-foreground 'which-key-command-description-face)
+                             (face-foreground 'font-lock-function-name-face)))
     (set-face-foreground 'tlk/which-key-highlight-key-face
                          (face-background 'default))))
 

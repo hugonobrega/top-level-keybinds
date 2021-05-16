@@ -104,20 +104,22 @@ key itself (not case sensitive)
         (map-char-table
          (lambda (key value)
            (setq accumulator
-                 (cons (list
-                        (if (consp key)
-                            (list (car key) (cdr key))
-                          key)
-                        value)
-                       accumulator)))
+                 (cons
+                  (cond ((commandp value)
+                         (cons key value)))
+                  accumulator)))
          x)
         accumulator)
-    x))
+    (list x)))
 
 (defun tlk/collect (&optional thing comparison-predicate)
   (let ((thing (or thing
-                   (seq-map #'tlk/preprocess
-                            (seq-reduce #'append (current-active-maps) nil))))
+                   (seq-reduce #'append
+                               (seq-map #'tlk/preprocess
+                                        (seq-reduce #'append
+                                                    (current-active-maps)
+                                                    nil))
+                               nil)))
         (comparison-predicate (or comparison-predicate
                                   tlk/comparison-predicate))
         (queue nil))
